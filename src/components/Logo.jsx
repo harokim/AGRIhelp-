@@ -1,0 +1,1 @@
+import{useEffect,useState}from"react";import{getMedia,fileToDataURL}from"../mediaStore";export default function Logo({className=""}){const[src,setSrc]=useState("/favicon.svg");useEffect(()=>{getMedia("logo").then(f=>f&&fileToDataURL(f).then(setSrc)).catch(()=>{})},[]);return <img className={className} src={src} alt="AGRIhelp logo"/>}

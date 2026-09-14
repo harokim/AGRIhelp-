@@ -1,0 +1,1 @@
+import{OFFICE_NAME}from"../utils";import Logo from"./Logo";export default function Brand(){return <div className="brand"><Logo/><div className="brand-copy"><strong>AGRIhelp</strong><span>{OFFICE_NAME}</span></div></div>}
