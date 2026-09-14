@@ -1,0 +1,72 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function currentUser() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isEngineer() {
+      return signedIn() && currentUser().data.role == "engineer" && currentUser().data.status != "inactive";
+    }
+
+    function isClient() {
+      return signedIn() && currentUser().data.role == "client" && currentUser().data.status != "inactive";
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn() && (request.auth.uid == userId || isEngineer() || resource.data.role == "engineer");
+      allow create: if signedIn() && request.auth.uid == userId;
+      allow update: if signedIn() && (request.auth.uid == userId || isEngineer());
+      allow delete: if false;
+    }
+
+    match /requests/{requestId} {
+      allow create: if isClient() && request.resource.data.clientId == request.auth.uid;
+      allow read: if signedIn() && (resource.data.clientId == request.auth.uid || isEngineer());
+      allow update: if isEngineer();
+      allow delete: if false;
+    }
+
+    match /documents/{documentId} {
+      allow create: if isClient() && request.resource.data.clientId == request.auth.uid;
+      allow read: if signedIn() && (resource.data.clientId == request.auth.uid || isEngineer());
+      allow update: if isEngineer();
+      allow delete: if false;
+    }
+
+    match /appointments/{appointmentId} {
+      allow read: if signedIn() && (resource.data.clientId == request.auth.uid || isEngineer());
+      allow create, update, delete: if isEngineer();
+    }
+
+    match /blockedDates/{dateId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isEngineer();
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isEngineer();
+      allow delete: if false;
+    }
+
+    match /messages/{messageId} {
+      allow read: if signedIn() && request.auth.uid in resource.data.participants;
+      allow create: if signedIn() && request.resource.data.senderId == request.auth.uid && request.auth.uid in request.resource.data.participants;
+      allow update: if signedIn() && request.auth.uid in resource.data.participants;
+      allow delete: if false;
+    }
+
+    match /auditLogs/{logId} {
+      allow read: if isEngineer();
+      allow create: if signedIn();
+      allow update, delete: if false;
+    }
+  }
+}

@@ -1,0 +1,12 @@
+import { useRequests } from "../context/RequestContext";
+import { useAppointments } from "../context/AppointmentContext";
+import { useNavigate } from "react-router-dom";
+
+export default function EngineerDashboard() {
+  const { requests } = useRequests();
+  const { appointments } = useAppointments();
+  const navigate = useNavigate();
+  const pending = requests.filter((request) => ["Submitted", "Under Review"].includes(request.status));
+
+  return <div className="container page-container"><div className="page-header"><div><span className="eyebrow">ENGINEER PORTAL</span><h1>Engineer dashboard</h1><p>Review client requests, appointments, reports, and system activity.</p></div><button className="primary-btn" onClick={() => navigate("/reports")}>Generate Report</button></div><div className="stats-grid"><div className="stat-card"><span>Total requests</span><strong>{requests.length}</strong></div><div className="stat-card"><span>Pending review</span><strong>{pending.length}</strong></div><div className="stat-card"><span>Approved</span><strong>{requests.filter((request) => request.status === "Approved").length}</strong></div><div className="stat-card"><span>Appointments</span><strong>{appointments.length}</strong></div></div><div className="dashboard-grid"><section className="card"><div className="section-title"><div><h3>Review queue</h3><p>Requests waiting for engineer action.</p></div></div>{pending.slice(0, 8).map((request) => <div className="activity-row" key={request.id}><div><strong>{request.association}</strong><span>{request.referenceNumber || request.id}</span></div><span className="status">{request.status}</span></div>)}{pending.length === 0 && <p className="muted">No requests are waiting for review.</p>}</section><section className="card"><h3>Upcoming appointments</h3>{appointments.slice(0, 8).map((appointment) => <div className="activity-row" key={appointment.id}><div><strong>{appointment.title}</strong><span>{appointment.date} · {appointment.time}</span></div><span className="tag">{appointment.status}</span></div>)}{appointments.length === 0 && <p className="muted">No appointments scheduled.</p>}</section></div></div>;
+}
