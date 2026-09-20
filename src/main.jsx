@@ -8,21 +8,24 @@ import { RequestProvider } from "./context/RequestContext";
 import { AppointmentProvider } from "./context/AppointmentContext";
 import { MessageProvider } from "./context/MessageContext";
 import { NotificationProvider } from "./context/NotificationContext";
+import { ThemeProvider } from "./context/ThemeContext";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
-      <AuthProvider>
-        <RequestProvider>
-          <AppointmentProvider>
-            <MessageProvider>
-              <NotificationProvider>
-                <App />
-              </NotificationProvider>
-            </MessageProvider>
-          </AppointmentProvider>
-        </RequestProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <RequestProvider>
+            <AppointmentProvider>
+              <MessageProvider>
+                <NotificationProvider>
+                  <App />
+                </NotificationProvider>
+              </MessageProvider>
+            </AppointmentProvider>
+          </RequestProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

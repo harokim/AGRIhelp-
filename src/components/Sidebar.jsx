@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import { initials } from "../utils";
 
 export default function Sidebar({
@@ -9,6 +10,7 @@ export default function Sidebar({
   setMobileOpen = () => {}
 }) {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   if (!user) return null;
@@ -48,6 +50,23 @@ export default function Sidebar({
     >
       <div className="sidebar-inner">
         <div className="sidebar-header">
+          <div className="sidebar-brand">
+            {!collapsed && (
+              <>
+                <div className="sidebar-brand-mark">A</div>
+
+                <div className="sidebar-brand-text">
+                  <strong>AGRIhelp</strong>
+                  <span>Agricultural Services</span>
+                </div>
+              </>
+            )}
+
+            {collapsed && (
+              <div className="sidebar-brand-mark">A</div>
+            )}
+          </div>
+
           <button
             type="button"
             className="sidebar-toggle"
@@ -78,6 +97,29 @@ export default function Sidebar({
         </nav>
 
         <div className="sidebar-bottom">
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={toggleTheme}
+            title={
+              collapsed
+                ? theme === "light"
+                  ? "Switch to dark mode"
+                  : "Switch to light mode"
+                : undefined
+            }
+          >
+            <span className="theme-icon">
+              {theme === "light" ? "☾" : "☀"}
+            </span>
+
+            {!collapsed && (
+              <span className="theme-label">
+                {theme === "light" ? "Dark mode" : "Light mode"}
+              </span>
+            )}
+          </button>
+
           <button
             type="button"
             className="user-mini"

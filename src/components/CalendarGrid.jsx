@@ -1,2 +1,225 @@
-import{useMemo,useState}from"react";import{formatDate,todayISO}from"../utils";
-export default function CalendarGrid({appointments=[],blockedDates=[],onToggleBlocked,engineer=false,selectedDate,onSelect}){const [month,setMonth]=useState(new Date());const y=month.getFullYear(),m=month.getMonth();const days=new Date(y,m+1,0).getDate();const first=new Date(y,m,1).getDay();const cells=useMemo(()=>Array.from({length:first+days},(_,i)=>i<first?null:i-first+1),[first,days]);const pad=n=>String(n).padStart(2,"0");return <div className="calendar-wrap"><div className="calendar-head"><button className="secondary-btn" onClick={()=>setMonth(new Date(y,m-1,1))}>‹</button><h3>{month.toLocaleDateString(undefined,{month:"long",year:"numeric"})}</h3><button className="secondary-btn" onClick={()=>setMonth(new Date(y,m+1,1))}>›</button></div><div className="calendar-week">{["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d=><b key={d}>{d}</b>)}</div><div className="calendar-grid">{cells.map((d,i)=>{if(!d)return <div className="calendar-day empty" key={i}/>;const date=`${y}-${pad(m+1)}-${pad(d)}`,ap=appointments.filter(a=>a.date===date),blocked=blockedDates.includes(date),past=date<todayISO();return <button key={date} disabled={!engineer&&blocked} className={`calendar-day ${selectedDate===date?"selected":""} ${blocked?"blocked":""} ${past?"past":""}`} onClick={()=>engineer?onToggleBlocked?.(date):onSelect?.(date)}><strong>{d}</strong>{blocked&&<span>Unavailable</span>}{ap.slice(0,2).map(a=><small key={a.id}>{a.time} · {a.title}</small>)}{ap.length>2&&<small>+{ap.length-2} more</small>}</button>})}</div><p className="calendar-help">{engineer?"Click a date to mark it unavailable/available. Red dates are unavailable.":"Unavailable dates are shown in red."}</p></div>}
+import { useMemo, useState } from "react";
+import { todayISO } from "../utils";
+
+export default function CalendarGrid({
+  appointments = [],
+  blockedDates = [],
+  onToggleBlocked,
+  engineer = false,
+  selectedDate,
+  onSelect,
+}) {
+  const [month, setMonth] = useState(new Date());
+
+  const year = month.getFullYear();
+  const monthIndex = month.getMonth();
+
+  const daysInMonth = new Date(
+    year,
+    monthIndex + 1,
+    0
+  ).getDate();
+
+  const firstDay = new Date(
+    year,
+    monthIndex,
+    1
+  ).getDay();
+
+  const cells = useMemo(
+    () =>
+      Array.from(
+        {
+          length: firstDay + daysInMonth,
+        },
+        (_, index) =>
+          index < firstDay
+            ? null
+            : index - firstDay + 1
+      ),
+    [firstDay, daysInMonth]
+  );
+
+  const pad = (number) =>
+    String(number).padStart(2, "0");
+
+  const previousMonth = () => {
+    setMonth(
+      new Date(
+        year,
+        monthIndex - 1,
+        1
+      )
+    );
+  };
+
+  const nextMonth = () => {
+    setMonth(
+      new Date(
+        year,
+        monthIndex + 1,
+        1
+      )
+    );
+  };
+
+  return (
+    <div className="calendar-wrap">
+      <div className="calendar-head">
+        <button
+          type="button"
+          className="secondary-btn calendar-nav-btn"
+          onClick={previousMonth}
+          aria-label="Previous month"
+        >
+          ‹
+        </button>
+
+        <h3>
+          {month.toLocaleDateString(undefined, {
+            month: "long",
+            year: "numeric",
+          })}
+        </h3>
+
+        <button
+          type="button"
+          className="secondary-btn calendar-nav-btn"
+          onClick={nextMonth}
+          aria-label="Next month"
+        >
+          ›
+        </button>
+      </div>
+
+      <div className="calendar-week">
+        {[
+          "Sun",
+          "Mon",
+          "Tue",
+          "Wed",
+          "Thu",
+          "Fri",
+          "Sat",
+        ].map((day) => (
+          <b key={day}>{day}</b>
+        ))}
+      </div>
+
+      <div className="calendar-grid">
+        {cells.map((day, index) => {
+          if (!day) {
+            return (
+              <div
+                className="calendar-day empty"
+                key={`empty-${index}`}
+              />
+            );
+          }
+
+          const date = `${year}-${pad(
+            monthIndex + 1
+          )}-${pad(day)}`;
+
+          const dayAppointments =
+            appointments.filter(
+              (appointment) =>
+                appointment.date === date
+            );
+
+          const unavailable =
+            blockedDates.includes(date);
+
+          const past = date < todayISO();
+
+          const selected =
+            selectedDate === date;
+
+          const classes = [
+            "calendar-day",
+            selected ? "selected" : "",
+            unavailable ? "blocked" : "",
+            past ? "past" : "",
+            dayAppointments.length > 0
+              ? "has-appointments"
+              : "",
+          ]
+            .filter(Boolean)
+            .join(" ");
+
+          const handleClick = () => {
+            if (engineer) {
+              onToggleBlocked?.(date);
+              return;
+            }
+
+            if (unavailable || past) {
+              return;
+            }
+
+            onSelect?.(date);
+          };
+
+          return (
+            <button
+              type="button"
+              key={date}
+              disabled={
+                !engineer &&
+                (unavailable || past)
+              }
+              className={classes}
+              onClick={handleClick}
+              title={
+                unavailable
+                  ? "Unavailable date"
+                  : past
+                  ? "Past date"
+                  : "Available date"
+              }
+            >
+              <div className="calendar-day-top">
+                <strong>{day}</strong>
+
+                {unavailable && (
+                  <span className="calendar-unavailable-badge">
+                    Unavailable
+                  </span>
+                )}
+              </div>
+
+              {dayAppointments
+                .slice(0, 2)
+                .map((appointment) => (
+                  <small
+                    key={appointment.id}
+                    className="calendar-appointment"
+                  >
+                    <span>
+                      {appointment.time}
+                    </span>
+
+                    <span>
+                      {appointment.title}
+                    </span>
+                  </small>
+                ))}
+
+              {dayAppointments.length > 2 && (
+                <small className="calendar-more">
+                  +{dayAppointments.length - 2} more
+                </small>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <p className="calendar-help">
+        {engineer
+          ? "Click a date to mark it unavailable or available. Red dates are unavailable."
+          : "Red dates are unavailable and cannot be selected."}
+      </p>
+    </div>
+  );
+}

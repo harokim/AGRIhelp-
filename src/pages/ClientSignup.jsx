@@ -17,7 +17,6 @@ const empty = {
   association: "",
   members: "",
   year: "",
-  officeAddress: "",
   position: "",
   region: "",
   province: "",
@@ -42,18 +41,13 @@ export default function ClientSignup() {
 
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(empty);
-
   const [regions, setRegions] = useState([]);
   const [provinces, setProvinces] = useState([]);
   const [municipalities, setMunicipalities] = useState([]);
   const [barangays, setBarangays] = useState([]);
-
   const [loadingLocations, setLoadingLocations] = useState(false);
   const [locationError, setLocationError] = useState("");
-  const [showValidationModal, setShowValidationModal] = useState(false);
-  const [validationMessage, setValidationMessage] = useState(
-    "Some of the information entered is missing or invalid. Please check your details and try again."
-  );
+  const [formError, setFormError] = useState("");
   const [creatingAccount, setCreatingAccount] = useState(false);
 
   const updateField = (name, value) => {
@@ -61,6 +55,8 @@ export default function ClientSignup() {
       ...previous,
       [name]: value,
     }));
+
+    setFormError("");
   };
 
   const calculateAge = (birthday) => {
@@ -288,15 +284,9 @@ export default function ClientSignup() {
   const isValidName = (name) =>
     /^[A-Za-zÑñ .'-]+$/.test(name.trim());
 
-  const showFormError = (message) => {
-    setValidationMessage(
-      message ||
-        "Some of the information entered is missing or invalid. Please check your details and try again."
-    );
-    setShowValidationModal(true);
-  };
-
   const validateStep = () => {
+    setFormError("");
+
     if (step === 1) {
       const birthDate = form.birthday
         ? new Date(`${form.birthday}T00:00:00`)
@@ -307,55 +297,52 @@ export default function ClientSignup() {
         !Number.isNaN(birthDate.getTime()) &&
         birthDate <= new Date();
 
-      const validMiddleName =
-        !form.middleName.trim() ||
-        isValidName(form.middleName);
-
       if (!form.firstName.trim()) {
-        showFormError("Please enter your first name.");
+        setFormError("Please enter your first name.");
         return false;
       }
 
       if (!isValidName(form.firstName)) {
-        showFormError(
+        setFormError(
           "First name can only contain letters, spaces, periods, apostrophes, or hyphens."
         );
         return false;
       }
 
       if (!form.lastName.trim()) {
-        showFormError("Please enter your last name.");
+        setFormError("Please enter your last name.");
         return false;
       }
 
       if (!isValidName(form.lastName)) {
-        showFormError(
+        setFormError(
           "Last name can only contain letters, spaces, periods, apostrophes, or hyphens."
         );
         return false;
       }
 
-      if (!validMiddleName) {
-        showFormError(
-          "Please enter a valid middle name."
-        );
+      if (
+        form.middleName.trim() &&
+        !isValidName(form.middleName)
+      ) {
+        setFormError("Please enter a valid middle name.");
         return false;
       }
 
       if (!form.birthday || !validBirthDate) {
-        showFormError("Please enter a valid birthday.");
+        setFormError("Please enter a valid birthday.");
         return false;
       }
 
       if (age < 18) {
-        showFormError(
+        setFormError(
           "You must be at least 18 years old to create an account."
         );
         return false;
       }
 
       if (!form.civilStatus) {
-        showFormError("Please select your civil status.");
+        setFormError("Please select your civil status.");
         return false;
       }
     }
@@ -365,28 +352,28 @@ export default function ClientSignup() {
         form.contactNumber.replace(/\D/g, "");
 
       if (!/^09\d{9}$/.test(contactNumber)) {
-        showFormError(
+        setFormError(
           "Please enter a valid Philippine mobile number beginning with 09."
         );
         return false;
       }
 
       if (!isValidEmail(form.email)) {
-        showFormError(
+        setFormError(
           "Please enter a valid email address."
         );
         return false;
       }
 
       if (form.password.length < 6) {
-        showFormError(
+        setFormError(
           "Your password must contain at least 6 characters."
         );
         return false;
       }
 
       if (!form.association) {
-        showFormError(
+        setFormError(
           "Please select your association."
         );
         return false;
@@ -402,7 +389,7 @@ export default function ClientSignup() {
         !Number.isInteger(members) ||
         members < 1
       ) {
-        showFormError(
+        setFormError(
           "Please enter a valid number of association members."
         );
         return false;
@@ -413,21 +400,14 @@ export default function ClientSignup() {
         year < 1900 ||
         year > currentYear
       ) {
-        showFormError(
+        setFormError(
           "Please enter a valid association registration year."
         );
         return false;
       }
 
-      if (!form.officeAddress.trim()) {
-        showFormError(
-          "Please enter the association office address."
-        );
-        return false;
-      }
-
       if (!form.position) {
-        showFormError(
+        setFormError(
           "Please select your position in the association."
         );
         return false;
@@ -436,24 +416,24 @@ export default function ClientSignup() {
 
     if (step === 4) {
       if (!form.region) {
-        showFormError("Please select your region.");
+        setFormError("Please select your region.");
         return false;
       }
 
       if (!form.province) {
-        showFormError("Please select your province.");
+        setFormError("Please select your province.");
         return false;
       }
 
       if (!form.municipality) {
-        showFormError(
+        setFormError(
           "Please select your municipality or city."
         );
         return false;
       }
 
       if (!form.barangay) {
-        showFormError("Please select your barangay.");
+        setFormError("Please select your barangay.");
         return false;
       }
     }
@@ -464,12 +444,16 @@ export default function ClientSignup() {
   const nextStep = () => {
     if (!validateStep()) return;
 
+    setFormError("");
+
     setStep((previous) =>
       Math.min(previous + 1, 4)
     );
   };
 
   const previousStep = () => {
+    setFormError("");
+
     setStep((previous) =>
       Math.max(previous - 1, 1)
     );
@@ -518,29 +502,29 @@ export default function ClientSignup() {
       if (
         error?.code === "auth/email-already-in-use"
       ) {
-        showFormError(
+        setFormError(
           "This email address is already registered. Please use another email address."
         );
       } else if (
         error?.code === "auth/invalid-email"
       ) {
-        showFormError(
+        setFormError(
           "The email address is not valid."
         );
       } else if (
         error?.code === "auth/weak-password"
       ) {
-        showFormError(
+        setFormError(
           "The password is too weak. Please use at least 6 characters."
         );
       } else if (
         error?.code === "auth/configuration-not-found"
       ) {
-        showFormError(
+        setFormError(
           "Firebase Authentication is not configured for this project. Enable Email/Password sign-in in the Firebase Console."
         );
       } else {
-        showFormError(
+        setFormError(
           error?.message ||
             "Account creation failed. Please try again."
         );
@@ -630,6 +614,15 @@ export default function ClientSignup() {
             <p>Step {step} of 4</p>
           </div>
 
+          {formError && (
+            <div
+              className="signup-form-error"
+              role="alert"
+            >
+              {formError}
+            </div>
+          )}
+
           {step === 1 && (
             <div className="form-grid">
               <Field
@@ -665,9 +658,11 @@ export default function ClientSignup() {
                 value={form.birthday}
                 onChange={updateField}
                 required
-                max={new Date()
-                  .toISOString()
-                  .split("T")[0]}
+                max={
+                  new Date()
+                    .toISOString()
+                    .split("T")[0]
+                }
               />
 
               <Field
@@ -789,16 +784,6 @@ export default function ClientSignup() {
                 max={new Date().getFullYear()}
               />
 
-              <Field
-                label="Farm / Association office address"
-                name="officeAddress"
-                value={form.officeAddress}
-                onChange={updateField}
-                required
-                wide
-                placeholder="Enter complete office address"
-              />
-
               <SelectField
                 label="Member's position in association"
                 name="position"
@@ -828,10 +813,14 @@ export default function ClientSignup() {
                   regions.length === 0
                 }
                 onChange={(value) => {
-                  updateField("region", value);
-                  updateField("province", "");
-                  updateField("municipality", "");
-                  updateField("barangay", "");
+                  setForm((previous) => ({
+                    ...previous,
+                    region: value,
+                    province: "",
+                    municipality: "",
+                    barangay: "",
+                  }));
+                  setFormError("");
                 }}
                 required
               />
@@ -845,9 +834,13 @@ export default function ClientSignup() {
                   loadingLocations
                 }
                 onChange={(value) => {
-                  updateField("province", value);
-                  updateField("municipality", "");
-                  updateField("barangay", "");
+                  setForm((previous) => ({
+                    ...previous,
+                    province: value,
+                    municipality: "",
+                    barangay: "",
+                  }));
+                  setFormError("");
                 }}
                 required
               />
@@ -861,11 +854,12 @@ export default function ClientSignup() {
                   loadingLocations
                 }
                 onChange={(value) => {
-                  updateField(
-                    "municipality",
-                    value
-                  );
-                  updateField("barangay", "");
+                  setForm((previous) => ({
+                    ...previous,
+                    municipality: value,
+                    barangay: "",
+                  }));
+                  setFormError("");
                 }}
                 required
               />
@@ -937,37 +931,6 @@ export default function ClientSignup() {
           </div>
         </form>
       </div>
-
-      {showValidationModal && (
-        <div
-          className="signup-error-backdrop"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="signup-error-title"
-        >
-          <div className="signup-error-modal">
-            <div className="signup-error-icon">
-              !
-            </div>
-
-            <h2 id="signup-error-title">
-              Please check your information
-            </h2>
-
-            <p>{validationMessage}</p>
-
-            <button
-              type="button"
-              className="primary-btn full"
-              onClick={() =>
-                setShowValidationModal(false)
-              }
-            >
-              Continue
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -985,10 +948,9 @@ function Field({
   min,
   max,
   maxLength,
-  wide = false,
 }) {
   return (
-    <div className={`field ${wide ? "wide" : ""}`}>
+    <div className="field">
       <label>
         {label}
         {required && " *"}
