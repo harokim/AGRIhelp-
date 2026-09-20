@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { addDoc, collection, doc, getDoc, onSnapshot, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
 import { db, firebaseConfigured } from "../firebase";
 import { sendSemaphoreSMS } from "../services/semaphoreService";
 import { useAuth } from "./AuthContext";
@@ -15,7 +15,7 @@ async function notifyClient(clientId, title, message, requestId) {
   const client = await getDoc(doc(db, "users", clientId));
   const phoneNumber = client.exists() ? client.data().contactNumber : "";
   if (phoneNumber) {
-    try { await sendSemaphoreSMS({ phoneNumber, message: `AGRIhelp: ${message}` }); } catch {}
+    try { await sendSemaphoreSMS({ phoneNumber, message: \`AGRIhelp: \${message}\` }); } catch {}
   }
 }
 
@@ -35,7 +35,7 @@ export function RequestProvider({ children }) {
   }, [user?.id, user?.role]);
 
   const createRequest = async (data) => {
-    const referenceNumber = `REQ-${Date.now().toString().slice(-8)}`;
+    const referenceNumber = \`REQ-\${Date.now().toString().slice(-8)}\`;
     const requestData = { ...data, referenceNumber, status: "Submitted", notes: "", createdAt: new Date().toISOString().slice(0, 10), createdAtTimestamp: serverTimestamp(), updatedAt: serverTimestamp() };
     const requestRef = await addDoc(collection(db, "requests"), requestData);
     return { id: requestRef.id, ...requestData };
@@ -45,13 +45,24 @@ export function RequestProvider({ children }) {
     const current = requests.find((request) => request.id === id);
     if (!current || !["Submitted", "Under Review"].includes(current.status)) return;
     await updateDoc(doc(db, "requests", id), { status, notes: status === "Documents Pending" ? note : current.notes || "", updatedAt: serverTimestamp() });
-    const label = status === "Documents Pending" ? `Additional documents are needed. ${note}` : `Your request ${current.referenceNumber || id} is now ${status}.`;
-    await notifyClient(current.clientId, `Request ${status}`, label, id);
+    const label = status === "Documents Pending" ? \`Additional documents are needed. \${note}\` : \`Your request \${current.referenceNumber || id} is now \${status}.\`;
+    await notifyClient(current.clientId, \`Request \${status}\`, label, id);
   };
 
   const updateRequest = async (id, patch) => updateDoc(doc(db, "requests", id), { ...patch, updatedAt: serverTimestamp() });
 
-  return <RequestContext.Provider value={{ requests, documents, createRequest, decide, updateRequest }}>{children}</RequestContext.Provider>;
+  const deleteRequest = async (id) => {
+    if (!firebaseConfigured || !db) throw new Error("Firebase is not configured yet.");
+    const request = requests.find((item) => item.id === id);
+    if (!request) throw new Error("Request not found.");
+    const documentSnapshot = await getDocs(query(collection(db, "documents"), where("requestId", "==", id)));
+    const reportSnapshot = await getDocs(query(collection(db, "reportDocuments"), where("requestId", "==", id)));
+    await Promise.all(documentSnapshot.docs.map((item) => deleteDoc(item.ref)));
+    await Promise.all(reportSnapshot.docs.map((item) => deleteDoc(item.ref)));
+    await deleteDoc(doc(db, "requests", id));
+  };
+
+  return <RequestContext.Provider value={{ requests, documents, createRequest, decide, updateRequest, deleteRequest }}>{children}</RequestContext.Provider>;
 }
 
 export const useRequests = () => useContext(RequestContext);
